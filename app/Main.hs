@@ -14,7 +14,7 @@ import            Web.Scotty.Trans   (html, get)
 main :: IO ()
 main = do 
         t <- fromMaybe "World"   <$> lookupEnv "TARGET"  
-        pStr <- fromMaybe "8080" <$> lookupEnv "PORT"
+        pStr <- fromMaybe "3000" <$> lookupEnv "PORT"
         let p = read pStr :: Int
         scotty p (route $ T.pack t)
   
