@@ -1,3 +1,4 @@
+FROM ghcr.io/openfaas/of-watchdog:0.9.3 as watchdog
 FROM haskell:8.2.2 as builder
 
 WORKDIR /app
@@ -14,9 +15,21 @@ RUN stack build --copy-bins
 
 FROM ubuntu
 
+COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
+RUN chmod +x /usr/bin/fwatchdog
+
 WORKDIR /root/
 COPY --from=builder /root/.local/bin/kubernetes-hs-exe .
 
-ENV PORT 8080
+ENV fprocess="/root/kubernetes-hs-exe"
+ENV write_debug="true"
+ENV mode="http"
+ENV upstream_url="http://127.0.0.1:3000"
+ENV exec_timeout="10s"
+ENV write_timeout="15s"
+ENV read_timeout="15s"
 
-CMD ["./kubernetes-hs-exe"]
+EXPOSE 8080
+HEALTHCHECK --interval=3s CMD [ -e /tmp/.lock ] || exit 1
+
+CMD ["fwatchdog"]
