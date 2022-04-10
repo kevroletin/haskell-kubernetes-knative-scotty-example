@@ -1,19 +1,18 @@
 FROM ghcr.io/openfaas/of-watchdog:0.9.3 as watchdog
-FROM haskell:8.2.2 as builder
+FROM haskell:8.10.7-slim-buster as builder
 
 WORKDIR /app
 
 COPY stack.yaml .
 COPY package.yaml .
-RUN stack setup
-RUN stack install --only-dependencies
+RUN stack build --system-ghc --only-dependencies
 
-# ----
+# ---
 
 COPY . .
-RUN stack build --copy-bins
+RUN stack build --system-ghc --copy-bins
 
-FROM ubuntu
+FROM debian:buster-slim
 
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
