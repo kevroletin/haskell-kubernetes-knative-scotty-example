@@ -5,26 +5,28 @@ module Main where
 import            Lib
 import            Data.Maybe         (fromMaybe)
 import            Data.Monoid        ((<>))
-import qualified  Data.Text.Lazy as T  
+import qualified  Data.Text.Lazy as T
 import            System.Environment (lookupEnv)
-import            Web.Scotty         (ActionM, ScottyM, scotty)
-import            Web.Scotty.Trans   (html, get)
-  
+import            System.IO          (hPrint, stderr)
+import            Web.Scotty         (ActionM, ScottyM, scotty, body, middleware)
+import            Web.Scotty.Trans   (html, get, post)
+import            Control.Monad.IO.Class (liftIO)
+import            Network.Wai.Middleware.RequestLogger
 
 main :: IO ()
-main = do 
-        t <- fromMaybe "World"   <$> lookupEnv "TARGET"  
-        pStr <- fromMaybe "3000" <$> lookupEnv "PORT"
-        let p = read pStr :: Int
-        scotty p (route $ T.pack t)
-  
-route :: T.Text -> ScottyM()
-route t = get "/" $ hello t
-  
-hello :: T.Text -> ActionM()
-hello t = html $ mconcat ["<!DOCTYPE html><html><head><title>"
-                         ,"Haskell Kubernetes"
-                         ,"</title></head><body><h1>"
-                         ,"Hello " 
-                         , t 
-                         , "</h1></body></html>"] 
+main = scotty 3000 $ do
+  middleware logStdoutDev
+  get "/" htmlHello
+  post "/" printReqBody
+
+printReqBody :: ActionM()
+printReqBody = do
+  b <- body
+  liftIO (hPrint stderr b)
+
+htmlHello :: ActionM()
+htmlHello = html $ mconcat ["<!DOCTYPE html><html><head><title>"
+                           ,"Haskell Kubernetes"
+                           ,"</title></head><body><h1>"
+                           ,"Hello World"
+                           , "</h1></body></html>"]
